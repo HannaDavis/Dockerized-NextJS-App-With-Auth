@@ -1,0 +1,54 @@
+#!/bin/bash
+set -e
+
+function build() {
+  echo 'Stopping and removing containers...';
+  docker compose down;
+  echo 'Containers have been removed.';
+
+   imageExists=$( docker images -q nextjs-app-web )
+
+   if [[ -n "$imageExists" ]]; then
+    echo 'Removing existing image...';
+    docker rmi $(docker images --filter=reference="nextjs-app-web" -q);
+    echo 'Image nextjs-app-web has been removed.';
+   fi
+ 
+
+  echo 'Building image...';
+  docker build --tag nextjs-app-web . 
+
+  echo 'Image is ready.';
+}
+
+function start() {
+   echo 'Verifying nextjs image exists...';
+
+   imageExists=$( docker images -q nextjs-app-web )
+
+   if [[ -n "$imageExists" ]]; then
+      echo 'Image exists, starting the project.';
+      docker compose up -d
+   else
+     echo 'Image does not exist, building image...';
+     build
+     docker compose up -d
+   fi
+
+   echo 'Provisioning node modules...'
+   cd web
+   yarn install
+
+   exit 1;
+}
+
+function stop() {
+  echo 'Powering down...';
+  docker compose stop
+}
+
+$1
+
+
+
+
